@@ -1,0 +1,21 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "AWS Mainframe Modernization Environment",
+
+  "Resources": {
+    "M2EnvironmentMicroFocus": {
+      "Type": "AWS::M2::Environment",
+      "Properties": {
+        "Name": {"Fn::Join": ["-",[{ "Ref" : "AWS::StackName" },"m2-env"]]},
+        "EngineType": "microfocus",
+        "InstanceType": "M2.m5.large"
+      }
+    }
+  },
+  "Outputs" : {
+    "M2EnvironmentId" : {
+      "Description" : "M2 Environment Id",
+      "Value" :  { "Fn::GetAtt" : [ "M2EnvironmentMicroFocus", "EnvironmentId" ]}
+    }
+  }
+}

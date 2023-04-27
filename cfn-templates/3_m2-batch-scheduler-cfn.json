@@ -27,14 +27,6 @@
         }
       }
     },
-    "M2EnvironmentMicroFocus": {
-      "Type": "AWS::M2::Environment",
-      "Properties": {
-        "Name": {"Fn::Join": ["-",[{ "Ref" : "M2ApplicationName" },"env"]]},
-        "EngineType": "microfocus",
-        "InstanceType": "M2.m5.large"
-      }
-    },
 
     "StepFunctionsM2SchedulerRole" : {
       "Type": "AWS::IAM::Role",
@@ -370,10 +362,6 @@
     "M2ApplicationId" : {
       "Description" : "M2 Application Id",
       "Value" :  { "Fn::GetAtt" : [ "M2ApplicationMicroFocus", "ApplicationId" ]}
-    },
-    "M2EnvironmentId" : {
-      "Description" : "M2 Environment Id",
-      "Value" :  { "Fn::GetAtt" : [ "M2EnvironmentMicroFocus", "EnvironmentId" ]}
     },
     "StepFunctionsSchedulerFlowName" : {
       "Description" : "Step Functions Scheduler Flow Name",

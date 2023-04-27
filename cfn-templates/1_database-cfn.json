@@ -1,0 +1,119 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "Create Database for M2 Application",
+
+  "Parameters": {
+    "DBUser": {
+      "NoEcho": "true",
+      "Description" : "The database admin account username",
+      "Type": "String"
+    },
+    "DBPassword": {
+      "NoEcho": "true",
+      "Description" : "The database admin account password",
+      "Type": "String"
+    },
+    "DBInstanceIdentifier": {
+      "Description" : "The database instance identifier",
+      "Type": "String"
+    }
+  },
+
+  "Resources" : {
+    "M2Database" : {
+      "Type" : "AWS::RDS::DBInstance",
+      "Properties" : {
+        "AllocatedStorage" : "100",
+        "DBInstanceClass" : "db.t3.micro",
+        "DBInstanceIdentifier": { "Ref" : "DBInstanceIdentifier" },
+        "Engine" : "postgres",
+        "MasterUsername" : { "Ref" : "DBUser" },
+        "MasterUserPassword": {"Ref":  "DBPassword"},
+        "ManageMasterUserPassword": false,
+        "PubliclyAccessible": false,
+        "BackupRetentionPeriod": 0
+      }
+    },
+
+    "M2DbKMSKey": {
+      "Type": "AWS::KMS::Key",
+      "Properties": {
+        "Description": "Database Secret Key",
+        "EnableKeyRotation": true,
+        "KeyPolicy": {
+          "Version": "2012-10-17",
+          "Id": {
+            "Ref": "AWS::StackName"
+          },
+          "Statement": [
+            {
+              "Sid": "Allow administration of the key",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+                }
+              },
+              "Action": [
+                "kms:*"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "m2.amazonaws.com"
+              },
+              "Action": "kms:Decrypt",
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    },
+    "M2DbSecret": {
+      "Type": "AWS::SecretsManager::Secret",
+      "Properties": {
+        "Name": "M2Secret",
+        "Description": "Secret for M2 database",
+        "KmsKeyId" : {"Ref": "M2DbKMSKey"},
+        "SecretString": {"Fn::Join": ["",
+          ["{\"username\": \"",{ "Ref" : "DBUser" },
+            "\" ,\"password\": \"",{"Ref":  "DBPassword"},
+            "\" ,\"engine\": \"postgres\"",
+            ",\"host\": \"",{"Fn::GetAtt": "M2Database.Endpoint.Address"},
+            "\" ,\"port\": \"5432\"",
+            ",\"dbInstanceIdentifier\": \"",{"Ref": "DBInstanceIdentifier"},
+            "\" }"
+          ]]}
+      }
+    },
+    "M2SecretResourcePolicy": {
+      "Type": "AWS::SecretsManager::ResourcePolicy",
+      "Properties": {
+        "BlockPublicPolicy": "True",
+        "SecretId": { "Ref" : "M2DbSecret" },
+        "ResourcePolicy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "m2.amazonaws.com"
+              },
+              "Action": "secretsmanager:GetSecretValue",
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    }
+  },
+
+  "Outputs": {
+    "Secret": {
+      "Value": {"Ref": "M2DbSecret"}
+    }
+  }
+}

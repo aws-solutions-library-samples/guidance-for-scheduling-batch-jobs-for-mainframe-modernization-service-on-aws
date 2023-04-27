@@ -21,6 +21,14 @@ If you no longer need the resources that you created for this solution, delete t
 * Once the Application is stopped, delete the Application from the Environment
 * Access the CloudFormation service and delete the stack used to create all the resources
 
+## References
+
+* [AWS Mainframe Modernization user guide](https://docs.aws.amazon.com/m2/latest/userguide/what-is-m2.html)
+* [Amazon EventBridge Scheduler user guide](https://docs.aws.amazon.com/scheduler/latest/UserGuide/what-is-scheduler.html)
+* [AWS Step Functions developer guide](https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html)
+* [AWS Mainframe Modernization Application definition reference](https://docs.aws.amazon.com/m2/latest/userguide/applications-m2-definition.html)
+* [AWS Step Functions Workshop](https://catalog.workshops.aws/stepfunctions/en-US)
+
 ## Security
 
 See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
