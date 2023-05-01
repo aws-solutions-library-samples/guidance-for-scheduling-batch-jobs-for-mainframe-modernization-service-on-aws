@@ -12,11 +12,11 @@ The solution demonstrates how Amazon EventBridge and AWS Step Functions can be u
 ## Architecture Diagram
 High-level architecture diagram how the scheduler works end-to-end.
 
-![Architecture](images/Batch Scheduler Main.png)
+![Architecture](images/Batch%20Scheduler%20Main.png)
 
 Job template using the AWS Step Functions' job poller pattern.
 
-![Job Flow](images/Batch%20Scheduler%20Template.png)
+![Job Template](images/Batch%20Scheduler%20Template.png)
 
 Orchestration of Jobs using the AWS Step Functions JobTemplate.
 
@@ -30,6 +30,8 @@ Follow the steps below to download and deploy the resources to AWS -
 - Download the CloudFormation template 'm2-batch-scheduler-cfn.yml'
 - Download the content of folder 's3-content-for-replatform-batch' onto your local machine 
 ```
+![Sample Bucket structure](images/S3%20Bucket%20Sample%20structure.png)
+
 #### 2. Create S3 bucket and upload artifacts:
 ```
 - Login to your AWS Account and create a new S3 Bucket
@@ -37,13 +39,20 @@ Follow the steps below to download and deploy the resources to AWS -
 ```
 
 #### 3. Run CloudFormation Template:
+```html
+Following AWS resources will be created once the CloudFormation template executes successfully
 
-Following AWS resources will be created once the CloudFormation template executes successfully.
+```
+
 
 #### 4. Deploy Application onto Environment:
+```html
 
+```
 #### 5. Start Application:
+```html
 
+```
 
 ## Testing
 Once the deployment steps are complete 
