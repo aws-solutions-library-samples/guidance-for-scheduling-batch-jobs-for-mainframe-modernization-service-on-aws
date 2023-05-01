@@ -22,37 +22,41 @@ Orchestration of Jobs using the AWS Step Functions JobTemplate.
 
 ![Job Flow](images/Batch%20Scheduler%20Job%20Flow.png)
 
-## Deployment
+## Installation
 Follow the steps below to download and deploy the resources to AWS -
 
 #### 1. Download the Code from Github:
-```
+
 - Download the CloudFormation template 'm2-batch-scheduler-cfn.yml'
-- Download the content of folder 's3-content-for-replatform-batch' onto your local machine 
-```
-![Sample Bucket structure](images/S3%20Bucket%20Sample%20structure.png)
+- Download the content of folder 's3-content-for-replatform-batch' onto your local machine
 
 #### 2. Create S3 bucket and upload artifacts:
-```
+
 - Login to your AWS Account and create a new S3 Bucket
 - Upload the content of the folder 's3-content-for-replatform-batch' starting from folder v1
-```
+
+Sample S3 Bucket structure after upload.
+
+![Sample Bucket structure](images/S3%20Bucket%20Sample%20structure.png)
 
 #### 3. Run CloudFormation Template:
-```html
-Following AWS resources will be created once the CloudFormation template executes successfully
 
-```
+- Create a new stack on CloudFormation using the template 'm2-batch-scheduler-cfn.yml'
+- On specify stack details page, provide the S3 bucket name created in earlier step
+- Other parameters may be left as defaults
 
+Sample stack details -
+
+![Sample stack details](images/Stack%20Details.png)
+
+Following AWS resources are created once the CloudFormation template executes successfully
+
+![Scheduler resources](images/Scheduler%20resources.png)
 
 #### 4. Deploy Application onto Environment:
-```html
 
-```
 #### 5. Start Application:
-```html
 
-```
 
 ## Testing
 Once the deployment steps are complete 
