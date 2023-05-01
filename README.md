@@ -1,12 +1,12 @@
 # AWS Mainframe Modernization Batch Scheduler
 
 ## Introduction
-The solution demonstrates how Amazon EventBridge and AWS Step Functions can be utilized to build a batch job scheduler for AWS Mainframe Modernization. AWS Step Functions defines the job flow, Amazon EventBridge scheduler triggers the job flow at a specific time.
+The solution demonstrates how Amazon EventBridge and AWS Step Functions can be utilized to build a batch job scheduler for AWS Mainframe Modernization. AWS Step Functions defines the job flow and Amazon EventBridge scheduler triggers the job flow at a specific time.
 
 ## Prerequisites
-* Familiar with AWS Mainframe Modernization service
-* Knowledge on COBOL and JCL
-* AWS account with default VPC defined with security group in-bound and out-bound rules to permit access from port 5342
+* Familiarity with AWS Mainframe Modernization service
+* Knowledge on Mainframe COBOL and JCL programming and operations
+* AWS account with default VPC defined with security group in-bound and out-bound rules to permit access from port 5432. This is needed for communication of AWS Mainframe Modernization Application with the RDS database
 
 
 ## Architecture Diagram
@@ -14,11 +14,11 @@ High-level architecture diagram how the scheduler works end-to-end.
 
 ![Architecture](images/Batch%20Scheduler%20Main.png)
 
-Job template using the AWS Step Functions' job poller pattern.
+Simplified version of job template using the AWS Step Functions' Job Poller pattern.
 
 ![Job Template](images/Batch%20Scheduler%20Template.png)
 
-Orchestration of Jobs using the AWS Step Functions JobTemplate.
+Orchestration of jobs using the AWS Step Functions JobTemplate. Jobs S1, S2, Parallel Set and S3 run serially. Jobs P1, P2 and P3 run in parallel. The job flow itself is triggered by Amazon EventBridge.
 
 ![Job Flow](images/Batch%20Scheduler%20Job%20Flow.png)
 
@@ -38,6 +38,14 @@ Follow the steps below to download and deploy the resources to AWS -
 Sample S3 Bucket structure after upload.
 
 ![Sample Bucket structure](images/S3%20Bucket%20Sample%20structure.png)
+#### Components:
+- CBLHELLO - The components ending with .idy, .o and .so are Microfocus runtime artifacts for COBOL program. The source code is provided in the Github folder 's3-content-for-replatform-batch/v1/cbl/'
+- BATCH*00.JCL - Set of JCLs that will execute COBOL program CBLHELLO and end successfully with return code as 00
+- BATCH*04.JCL - Set of JCLs that will execute COBOL program CBLHELLO and end successfully with warning with return code as 04
+- BATCH*16.JCL - Set of JCLs that will execute COBOL program CBLHELLO and fail with return code as 16
+
+_The sets of jcls are provided for experimentation with different combination of job return code._
+
 
 #### 3. Run CloudFormation Template:
 
@@ -62,29 +70,34 @@ Following AWS resources are created once the CloudFormation template executes su
 - Once the Application moves to Ready status, click on Action dropdown menu and click Start application
 - Once the Application moves to Running status, the installation is complete
 - Navigate to different services on AWS Console to check on the different resources created - 
-- Amazon EventBridge
+- Amazon EventBridge -
 
 ![Amazon EventBridge](images/EventBridge.png)
 
-- Step Functions
+- Step Functions -
 
 ![Step Functions](images/StateMachines.png)
 
   
 
 ## Testing
-- The EventBridge scheduler is installed by default as DISABLED and one time schedule is set to Jan 01, 2023
+In this demonstration following job flow is created. BATCHA00, BATCHB00, parallel jobs and BATCHC00 run serially. BATCHA04 and BATCHB04 runs in parallel.
+
+![Job flow](images/stepfunctions_graph.png)
+
+
+- The EventBridge scheduler is installed by default as DISABLED and one time schedule is set to start at Jan 01, 2023
 - Enable the schedule by clicking on the Enable button
 - Switch to the Step Functions service on AWS Console and check the executions for the State Machine starting with 'm2-batch-scheduler-job-scheduler-flow-'
-- After couple of minutes there will be one execution in Running status
-- Monitor the progress by clicking on Job names on graphical view
+- After few minutes refresh the Executions and there will be one execution in Running status
+- Monitor the progress by clicking on job names on graphical view
 - Successful completion will be marked by green color
 - Explore different tabs on the page to look for Definition, Input, Output, Events, etc.
 - Click on the Execution to dig into details of each job run
 
 ![Results](images/Scheduler%20Run.png)
 
-#### [Restarting a Failed Job Stream]
+#### [Restarting a Failed job stream]
 - Run the failed job separately after fixing the issue
 - Clone the job Flow using the 'Copy to new' under Action dropdown menu
 - Change the Workflow 'Start at' to the next job from where the processing will resume
