@@ -77,7 +77,17 @@ Following AWS resources are created once the CloudFormation template executes su
 - Enable the schedule by clicking on the Enable button
 - Switch to the Step Functions service on AWS Console and check the executions for the State Machine starting with 'm2-batch-scheduler-job-scheduler-flow-'
 - After couple of minutes there will be one execution in Running status
-- 
+- Monitor the progress by clicking on Job names on graphical view
+- Successful completion will be marked by green color
+- Explore different tabs on the page to look for Definition, Input, Output, Events, etc.
+- Click on the Execution to dig into details of each job run
+
+![Results](images/Scheduler%20Run.png)
+
+#### [Restarting a Failed Job Stream]
+- Run the failed job separately after fixing the issue
+- Clone the job Flow using the 'Copy to new' under Action dropdown menu
+- Change the Workflow 'Start at' to the next job from where the processing will resume
 
 ## Clean up
 If you no longer need the resources that you created for this solution, delete them to avoid additional charges. To do so, complete the following steps:
@@ -88,9 +98,9 @@ If you no longer need the resources that you created for this solution, delete t
 ## References
 
 * [AWS Mainframe Modernization user guide](https://docs.aws.amazon.com/m2/latest/userguide/what-is-m2.html)
+* [AWS Mainframe Modernization Application definition reference](https://docs.aws.amazon.com/m2/latest/userguide/applications-m2-definition.html)
 * [Amazon EventBridge Scheduler user guide](https://docs.aws.amazon.com/scheduler/latest/UserGuide/what-is-scheduler.html)
 * [AWS Step Functions developer guide](https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html)
-* [AWS Mainframe Modernization Application definition reference](https://docs.aws.amazon.com/m2/latest/userguide/applications-m2-definition.html)
 * [AWS Step Functions Workshop](https://catalog.workshops.aws/stepfunctions/en-US)
 
 ## Security
