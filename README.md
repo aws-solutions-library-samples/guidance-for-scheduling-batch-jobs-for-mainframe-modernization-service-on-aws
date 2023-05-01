@@ -54,12 +54,30 @@ Following AWS resources are created once the CloudFormation template executes su
 ![Scheduler resources](images/Scheduler%20resources.png)
 
 #### 4. Deploy Application onto Environment:
+- Select AWS Mainframe Modernization service on AWS Console
+- Under Applications select the one starting with 'm2-batch-scheduler-m2-app-' and from Actions dropdown menu select 'Deploy Application'
+- Under Environments select the radio button for the one starting with 'm2-batch-scheduler-m2-env-' and click Deploy
 
 #### 5. Start Application:
+- Once the Application moves to Ready status, click on Action dropdown menu and click Start application
+- Once the Application moves to Running status, the installation is complete
+- Navigate to different services on AWS Console to check on the different resources created - 
+- Amazon EventBridge
 
+![Amazon EventBridge](images/EventBridge.png)
+
+- Step Functions
+
+![Step Functions](images/StateMachines.png)
+
+  
 
 ## Testing
-Once the deployment steps are complete 
+- The EventBridge scheduler is installed by default as DISABLED and one time schedule is set to Jan 01, 2023
+- Enable the schedule by clicking on the Enable button
+- Switch to the Step Functions service on AWS Console and check the executions for the State Machine starting with 'm2-batch-scheduler-job-scheduler-flow-'
+- After couple of minutes there will be one execution in Running status
+- 
 
 ## Clean up
 If you no longer need the resources that you created for this solution, delete them to avoid additional charges. To do so, complete the following steps:
