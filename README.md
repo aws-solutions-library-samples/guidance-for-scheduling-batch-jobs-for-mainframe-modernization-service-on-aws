@@ -1,19 +1,52 @@
 # AWS Mainframe Modernization Batch Scheduler
 
 ## Introduction
-The solution demonstrats how Amazon EventBridge and AWS Step Functions can be utilized to build a batch job scheduler for AWS Mainframe Modernization.
+The solution demonstrates how Amazon EventBridge and AWS Step Functions can be utilized to build a batch job scheduler for AWS Mainframe Modernization. AWS Step Functions defines the job flow, Amazon EventBridge scheduler triggers the job flow at a specific time.
+
+## Prerequisites
+* Familiar with AWS Mainframe Modernization service
+* Knowledge on COBOL and JCL
+* AWS account with default VPC defined with security group in-bound and out-bound rules to permit access from port 5342
+
 
 ## Architecture Diagram
+High-level architecture diagram how the scheduler works end-to-end.
 
-![Architecture](images/Batch%20Scheduler%20v1.png)
+![Architecture](images/Batch Scheduler Main.png)
+
+Job template using the AWS Step Functions' job poller pattern.
+
+![Job Flow](images/Batch%20Scheduler%20Template.png)
 
 Orchestration of Jobs using the AWS Step Functions JobTemplate.
 
-![Job Flow](images/Batch%20Scheduler%20Flow%20v1.png)
+![Job Flow](images/Batch%20Scheduler%20Job%20Flow.png)
 
 ## Deployment
+Follow the steps below to download and deploy the resources to AWS -
+
+#### 1. Download the Code from Github:
+```
+- Download the CloudFormation template 'm2-batch-scheduler-cfn.yml'
+- Download the content of folder 's3-content-for-replatform-batch' onto your local machine 
+```
+#### 2. Create S3 bucket and upload artifacts:
+```
+- Login to your AWS Account and create a new S3 Bucket
+- Upload the content of the folder 's3-content-for-replatform-batch' starting from folder v1
+```
+
+#### 3. Run CloudFormation Template:
+
+Following AWS resources will be created once the CloudFormation template executes successfully.
+
+#### 4. Deploy Application onto Environment:
+
+#### 5. Start Application:
+
 
 ## Testing
+Once the deployment steps are complete 
 
 ## Clean up
 If you no longer need the resources that you created for this solution, delete them to avoid additional charges. To do so, complete the following steps:

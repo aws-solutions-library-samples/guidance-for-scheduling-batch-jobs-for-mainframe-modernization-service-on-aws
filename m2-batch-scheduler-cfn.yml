@@ -1,5 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: 'AWS Step Functions StateMachine Scheduler for Re-platform Batch'
+
+Description: 'M2 Batch Scheduler using Amazon EventBridge and AWS Step Functions'
+
 Parameters:
   M2ApplicationName:
     Description: 'Name of the M2 re-platform Application'
@@ -12,7 +14,7 @@ Parameters:
     Default: 'm2-replatform-batch-scheduler'
 
   S3BucketAppKeyForM2Batch:
-    Description: 'S3 application Key'
+    Description: 'S3 application Key and version'
     Default: 'v1'
     Type: String
 
@@ -42,7 +44,7 @@ Resources:
   M2DbKMSKey:
     Type: AWS::KMS::Key
     Properties:
-      Description: 'Database Secret Key'
+      Description: 'M2 Database Secret Key'
       EnableKeyRotation: true
       KeyPolicy:
         Version: "2012-10-17"
@@ -143,6 +145,7 @@ Resources:
   M2EnvironmentMicroFocus:
     Type: AWS::M2::Environment
     Properties:
+      Description: 'Re-platform environment for M2 Application'
       Name:
         Fn::Join:
           - '-'
@@ -155,6 +158,7 @@ Resources:
   M2ApplicationMicroFocus:
     Type: AWS::M2::Application
     Properties:
+      Description: 'M2 Application'
       Name:
         Fn::Join:
           - '-'
@@ -168,6 +172,7 @@ Resources:
   StepFunctionsM2SchedulerRole:
     Type: AWS::IAM::Role
     Properties:
+      Description: 'IAM policy of Step Functions'
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -457,7 +462,7 @@ Resources:
   M2EventBridgeJobTrigger:
     Type: AWS::Scheduler::Schedule
     Properties:
-      Description: Time trigger for Batch Job Flow
+      Description: 'Time trigger for M2 Batch Job Flow'
       FlexibleTimeWindow:
         Mode: 'OFF'
       ScheduleExpression: at(2023-01-01T01:01:00)
