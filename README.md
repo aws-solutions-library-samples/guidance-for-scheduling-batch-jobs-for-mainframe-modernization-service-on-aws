@@ -94,6 +94,7 @@ In this demonstration following job flow is created. BATCHA00, BATCHB00, paralle
 - Successful completion will be marked by green color
 - Explore different tabs on the page to look for Definition, Input, Output, Events, etc.
 - Click on the Execution to dig into details of each job run
+- The SYSOUT of the jobs are available in the Output tabs of Step Functions, so there is no need to separately search for the logs in Cloud Watch
 
 ![Results](images/Scheduler%20Run.png)
 
