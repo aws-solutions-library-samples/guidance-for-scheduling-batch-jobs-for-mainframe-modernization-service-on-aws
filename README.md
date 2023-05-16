@@ -23,7 +23,7 @@ Orchestration of jobs using the AWS Step Functions JobTemplate. Jobs S1, S2, Par
 ![Job Flow](images/Batch%20Scheduler%20Job%20Flow.png)
 
 ## Installation
-Follow the steps below to download and deploy the resources to AWS -
+Follow the steps below to download and deploy the resources to AWS.
 
 #### 1. Download the Code from Github:
 
@@ -50,10 +50,10 @@ _The sets of jcls are provided for experimentation with different combination of
 #### 3. Run CloudFormation Template:
 
 - Create a new stack on CloudFormation using the template 'm2-batch-scheduler-cfn.yml'
-- On specify stack details page, provide the S3 bucket name created in earlier step
+- On specify stack details page, provide the S3 bucket name created in step 2
 - Other parameters may be left as defaults
 
-Sample stack details -
+Sample stack details.
 
 ![Sample stack details](images/Stack%20Details.png)
 
@@ -87,7 +87,7 @@ In this demonstration following job flow is created. BATCHA00, BATCHB00, paralle
 
 
 - The EventBridge scheduler is installed by default as DISABLED and one time schedule is set to start at Jan 01, 2023
-- Enable the schedule by clicking on the Enable button
+- In the EventBridge console, select the scheduled and click on the Enable button
 - Switch to the Step Functions service on AWS Console and check the executions for the State Machine starting with 'm2-batch-scheduler-job-scheduler-flow-'
 - After few minutes refresh the Executions and there will be one execution in Running status
 - Monitor the progress by clicking on job names on graphical view
