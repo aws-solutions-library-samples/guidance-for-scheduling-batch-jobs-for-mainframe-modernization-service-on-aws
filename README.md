@@ -74,7 +74,7 @@ Following AWS resources are created once the CloudFormation template executes su
 
 ![Amazon EventBridge](images/EventBridge.png)
 
-- Step Functions -
+- AWS Step Functions -
 
 ![Step Functions](images/StateMachines.png)
 
