@@ -6,8 +6,7 @@ The solution demonstrates how Amazon EventBridge and AWS Step Functions can be u
 ## Prerequisites
 * Familiarity with AWS Mainframe Modernization service
 * Knowledge on Mainframe COBOL and JCL programming and operations
-* The security group out-bound rules to permit access to the port if it is changed to different port other than what is provided as default 5432 in CloudFormation template. This is needed for communication of AWS Mainframe Modernization Application with the RDS database
-
+* Basic understanding of Amazon EventBridge Scheduler and AWS Step Functions
 
 ## Architecture Diagram
 High-level architecture diagram how the scheduler works end-to-end.
