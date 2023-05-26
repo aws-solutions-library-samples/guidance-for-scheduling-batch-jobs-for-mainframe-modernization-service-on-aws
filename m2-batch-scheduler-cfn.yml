@@ -3,101 +3,93 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: 'M2 Batch Scheduler using Amazon EventBridge and AWS Step Functions'
 
 Parameters:
+
   M2ApplicationName:
-    Description: 'Name of the M2 re-platform Application'
+    Description: 'name of the m2 re-platform application'
+    Default: 'm2-batch-scheduler'
     Type: String
-    Default: m2-batch-scheduler
 
-  S3BucketNameForM2Batch:
-    Description: 'S3 Bucket Name where the Microfocus recompiled artifacts are stored'
+  DbName:
+    Description: 'm2 db name'
+    Default: 'MfBaseAppDb'
     Type: String
-    Default: 'm2-replatform-batch-scheduler'
 
-  S3BucketAppKeyForM2Batch:
-    Description: 'S3 application Key and version'
+  InstanceType:
+    Description: 'm2 instance type'
+    Default: 'M2.m5.large'
+    Type: String
+
+  AppKey:
+    Description: 's3 app key'
     Default: 'v1'
     Type: String
 
   JclKey:
-    Description: 'S3 JCL folder Name'
+    Description: 's3 jcl folder key'
     Default: 'jcls'
     Type: String
 
+  BucketName:
+    Description: 'bucket name'
+    Type: String
+    Default: 'm2-replatform-batch-scheduler'
+
+  VpcCidrBlock:
+    Description: 'vpc cidr block'
+    Type: String
+    Default: '10.0.0.0/16'
+
   Tn3270Port:
-    Description: 'M2 TN3270 port'
+    Description: 'm2 tn3270 port'
     Default: 7000
     Type: Number
 
+  PostgresPort:
+    Description: 'm2 postgres port'
+    Default: 5432
+    Type: Number
+
 Resources:
-  M2Database:
-    Type: AWS::RDS::DBInstance
-    Properties:
-      AllocatedStorage: "100"
-      DBInstanceClass: db.t3.micro
-      Engine: postgres
-      MasterUsername: !Sub "{{resolve:secretsmanager:${M2DbSecret}::username}}"
-      MasterUserPassword: !Sub "{{resolve:secretsmanager:${M2DbSecret}::password}}"
-      ManageMasterUserPassword: false
-      PubliclyAccessible: false
-      BackupRetentionPeriod: 0
 
-  M2DbKMSKey:
-    Type: AWS::KMS::Key
-    Properties:
-      Description: 'M2 Database Secret Key'
-      EnableKeyRotation: true
-      KeyPolicy:
-        Version: "2012-10-17"
-        Id:
-          Ref: AWS::StackName
-        Statement:
-          - Sid: Allow administration of the key
-            Effect: Allow
-            Principal:
-              AWS:
-                Fn::Sub: arn:${AWS::Partition}:iam::${AWS::AccountId}:root
-            Action:
-              - kms:*
-            Resource: '*'
-          - Effect: Allow
-            Principal:
-              Service: m2.amazonaws.com
-            Action: kms:Decrypt
-            Resource: '*'
-  M2DbSecret:
-    Type: AWS::SecretsManager::Secret
+  M2EnvironmentMicrofocus:
+    Type: AWS::M2::Environment
     DeletionPolicy: Delete
+    DependsOn:
+      - M2Subnet1
+      - M2Subnet2
     Properties:
-      Description: 'Secret for M2 database'
-      KmsKeyId: !GetAtt M2DbKMSKey.Arn
-      GenerateSecretString:
-        SecretStringTemplate: '{"username": "dbadmin"}'
-        GenerateStringKey: 'password'
-        PasswordLength: 16
-        ExcludePunctuation: true
+      Name: !GetAtt M2Name.Value
+      Description: !Join
+        - ' '
+        -  - 'm2 environment:'
+           - !GetAtt M2Name.Value
+      PreferredMaintenanceWindow: 'sun:00:00-sun:01:00'
+      EngineType: microfocus
+      InstanceType: !Ref InstanceType
+      PubliclyAccessible: true
+      SubnetIds:
+        - !Ref M2Subnet1
+        - !Ref M2Subnet2
+      SecurityGroupIds:
+        - !GetAtt M2VpcSecGroup.GroupId
+      Tags:
+        'env-name': !GetAtt M2Name.Value
 
-  M2DbSecretTargetAttachment:
-    Type: AWS::SecretsManager::SecretTargetAttachment
+  M2ApplicationMicroFocus:
+    Type: AWS::M2::Application
     DeletionPolicy: Delete
+    DependsOn: M2DbCluster
     Properties:
-      TargetType: 'AWS::RDS::DBInstance'
-      SecretId: !Ref M2DbSecret
-      TargetId: !Ref M2Database
-
-  M2SecretResourcePolicy:
-    Type: AWS::SecretsManager::ResourcePolicy
-    Properties:
-      BlockPublicPolicy: "True"
-      SecretId:
-        Ref: M2DbSecret
-      ResourcePolicy:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: m2.amazonaws.com
-            Action: secretsmanager:GetSecretValue
-            Resource: '*'
+      Name: !GetAtt M2Name.Value
+      Description: !Join
+        - ' '
+        -  - 'm2 application:'
+           - !GetAtt M2Name.Value
+      EngineType: microfocus
+      Definition:
+        Content: !GetAtt M2AppDef.Value
+      Tags:
+        'app-name': !GetAtt M2Name.Value
 
   M2AppDef:
     Type: AWS::SSM::Parameter
@@ -112,8 +104,8 @@ Resources:
                 "source-id": "s3-source",
                 "source-type": "s3",
                 "properties": {
-                    "s3-bucket": "${S3BucketNameForM2Batch}",
-                    "s3-key-prefix": "${S3BucketAppKeyForM2Batch}"
+                    "s3-bucket": "${BucketName}",
+                    "s3-key-prefix": "${AppKey}"
                 }
             }
           ],
@@ -127,7 +119,7 @@ Resources:
             "dataset-location": {
               "db-locations": [
                 {
-                  "name": "DatabaseM2",
+                  "name": "${M2DbName.Value}",
                   "secret-manager-arn": "${M2DbSecret}"
                 }
               ]
@@ -142,37 +134,285 @@ Resources:
           }
         }
 
-  M2EnvironmentMicroFocus:
-    Type: AWS::M2::Environment
+  M2DbCluster:
+    Type: AWS::RDS::DBCluster
+    DeletionPolicy: Delete
     Properties:
-      Description: 'Re-platform environment for M2 Application'
-      Name:
-        Fn::Join:
-          - '-'
-          - - Ref: M2ApplicationName
-            - m2-env
-            - !GetAtt UniqueSuffix.Value
-      EngineType: microfocus
-      InstanceType: M2.m5.large
+      DatabaseName: !GetAtt M2DbName.Value
+      Port: !Ref PostgresPort
+      DBClusterParameterGroupName: !Ref M2DbClusterParameterGroup
+      MasterUsername: !Sub "{{resolve:secretsmanager:${M2DbSecret}::username}}"
+      MasterUserPassword: !Sub "{{resolve:secretsmanager:${M2DbSecret}::password}}"
+      Engine: 'aurora-postgresql'
+      EngineVersion: 14.6
+      ServerlessV2ScalingConfiguration:
+        MinCapacity: 2
+        MaxCapacity: 8
+      VpcSecurityGroupIds:
+        - !GetAtt M2VpcSecGroup.GroupId
+      DBSubnetGroupName: !Ref M2DBSubnetGroup
+      DeletionProtection: false
+      EnableIAMDatabaseAuthentication: true
+      StorageEncrypted: true
 
-  M2ApplicationMicroFocus:
-    Type: AWS::M2::Application
+  M2DbInstance:
+    Type: 'AWS::RDS::DBInstance'
     Properties:
-      Description: 'M2 Application'
-      Name:
-        Fn::Join:
-          - '-'
-          - - Ref: M2ApplicationName
-            - m2-app
-            - !GetAtt UniqueSuffix.Value
-      EngineType: microfocus
-      Definition:
-        Content: !GetAtt M2AppDef.Value
+      Engine: aurora-postgresql
+      DBInstanceClass: db.serverless
+      DBClusterIdentifier: !Ref M2DbCluster
+      PubliclyAccessible: false
+      MonitoringInterval: 15
+      MonitoringRoleArn: !GetAtt StepFunctionsM2SchedulerRole.Arn
+
+  M2DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    DeletionPolicy: Delete
+    Properties:
+      DBSubnetGroupDescription: 'subnet group for db cluster'
+      SubnetIds:
+        - !Ref M2Subnet1
+        - !Ref M2Subnet2
+
+  M2DbClusterParameterGroup:
+    Type: AWS::RDS::DBClusterParameterGroup
+    DeletionPolicy: Delete
+    Properties:
+      Description: 'parameter group for m2 db cluster'
+      Family: 'aurora-postgresql14'
+      Parameters:
+        max_prepared_transactions: 100
+
+  M2DbSecret:
+    Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Delete
+    Properties:
+      Description: 'database credentials for m2 app'
+      KmsKeyId: !GetAtt M2KmsKey.Arn
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "dbadmin"}'
+        GenerateStringKey: 'password'
+        PasswordLength: 16
+        ExcludePunctuation: true
+
+  M2DbSecretTargetAttachment:
+    Type: AWS::SecretsManager::SecretTargetAttachment
+    DeletionPolicy: Delete
+    Properties:
+      TargetType: 'AWS::RDS::DBCluster'
+      SecretId: !Ref M2DbSecret
+      TargetId: !Ref M2DbCluster
+
+  M2DbSecretResourcePolicy:
+    Type: AWS::SecretsManager::ResourcePolicy
+    DeletionPolicy: Delete
+    Properties:
+      SecretId: !Ref M2DbSecret
+      ResourcePolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'm2.amazonaws.com'
+            Action: 'secretsmanager:GetSecretValue'
+            Resource: !Ref M2DbSecret
+
+  M2KmsKey:
+    Type: AWS::KMS::Key
+    DeletionPolicy: Delete
+    Properties:
+      Description: 'symmetric key for m2 secret'
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: 'kms:*'
+            Resource: "*"
+          - Effect: 'Allow'
+            Principal:
+              Service: 'm2.amazonaws.com'
+            Action: 'kms:Decrypt'
+            Resource: '*'
+          - Effect: 'Allow'
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action: 'kms:*'
+            Resource: '*'
+
+  M2VpcSecGroup:
+    Type: AWS::EC2::SecurityGroup
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref M2Vpc
+      GroupDescription: 'security group for vpc'
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          CidrIp: '0.0.0.0/0'
+          FromPort: 5432
+          ToPort: 5432
+          Description: 'Allow outbound access within VPC'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          CidrIp: !GetAtt M2Vpc.CidrBlock
+          FromPort: 0
+          ToPort: 65335
+          Description: 'Allow on-vpc inbound access'
+        - IpProtocol: tcp
+          CidrIp: '0.0.0.0/0'
+          FromPort: !Ref Tn3270Port
+          ToPort: !Ref Tn3270Port
+          Description: 'Allow inbound tn3270 access'
+  M2Vpc:
+    Type: AWS::EC2::VPC
+    DeletionPolicy: Delete
+    DependsOn: M2Igw
+    Properties:
+      CidrBlock: !Ref VpcCidrBlock
+      EnableDnsHostnames: 'true'
+      EnableDnsSupport: 'true'
+
+  M2Subnet1:
+    Type: AWS::EC2::Subnet
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref M2Vpc
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ""
+      CidrBlock: !GetAtt M2Subnet1CidrBlock.Value
+      MapPublicIpOnLaunch: false
+
+  M2Subnet2:
+    Type: AWS::EC2::Subnet
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref M2Vpc
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ""
+      CidrBlock: !GetAtt M2Subnet2CidrBlock.Value
+      MapPublicIpOnLaunch: false
+
+  M2Igw:
+    Type: AWS::EC2::InternetGateway
+    DeletionPolicy: Delete
+
+  M2IgwAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref M2Vpc
+      InternetGatewayId: !Ref M2Igw
+
+  M2RouteTable:
+    Type: AWS::EC2::RouteTable
+    DeletionPolicy: Delete
+    DependsOn:
+      - M2Igw
+      - M2IgwAttachment
+    Properties:
+      VpcId: !Ref M2Vpc
+
+  M2Route:
+    Type: AWS::EC2::Route
+    DeletionPolicy: Delete
+    DependsOn:
+      - M2Igw
+      - M2IgwAttachment
+    Properties:
+      RouteTableId: !Ref M2RouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref M2Igw
+
+  M2Subnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DeletionPolicy: Delete
+    Properties:
+      SubnetId: !Ref M2Subnet1
+      RouteTableId: !Ref M2RouteTable
+
+  M2Subnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DeletionPolicy: Delete
+    Properties:
+      SubnetId: !Ref  M2Subnet2
+      RouteTableId: !Ref M2RouteTable
+
+  UniqueSuffix:
+    Type: AWS::SSM::Parameter
+    DeletionPolicy: Delete
+    Properties:
+      Type: 'String'
+      Value: !Select [0, !Split ['-', !Select [2, !Split [/, !Ref AWS::StackId ]]]]
+
+  M2Name:
+    Type: AWS::SSM::Parameter
+    DeletionPolicy: Delete
+    Properties:
+      Type: 'String'
+      Value: !Join
+        - '-'
+        -  - !Ref M2ApplicationName
+           - !GetAtt UniqueSuffix.Value
+
+  M2DbName:
+    Type: AWS::SSM::Parameter
+    DeletionPolicy: Delete
+    Properties:
+      Type: 'String'
+      Value: !Join
+        - ''
+        -  - !Ref DbName
+           - !GetAtt UniqueSuffix.Value
+
+  M2Subnet1CidrBlock:
+    Type: AWS::SSM::Parameter
+    DeletionPolicy: Delete
+    Properties:
+      Type: 'String'
+      Value: !Select
+        - 0
+        - Fn::Cidr:
+            - !Ref VpcCidrBlock
+            - 2
+            - 8
+
+  M2Subnet2CidrBlock:
+    Type: AWS::SSM::Parameter
+    DeletionPolicy: Delete
+    Properties:
+      Type: 'String'
+      Value: !Select
+        - 1
+        - Fn::Cidr:
+            - !Ref VpcCidrBlock
+            - 2
+            - 8
+
+  M2BatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 7
+      KmsKeyId: !GetAtt M2KmsKey.Arn
+      LogGroupName: /aws/vendedlogs
+
+
+  M2VpcFlowLog:
+    Type: AWS::EC2::FlowLog
+    Properties:
+      DeliverLogsPermissionArn: !GetAtt StepFunctionsM2SchedulerRole.Arn
+      LogGroupName: !Ref M2BatchLogGroup
+      ResourceId: !Ref M2Vpc
+      ResourceType: VPC
+      TrafficType: ALL
 
   StepFunctionsM2SchedulerRole:
     Type: AWS::IAM::Role
     Properties:
-      Description: 'IAM policy of Step Functions'
+      Description: 'IAM role for Step Functions'
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -180,9 +420,11 @@ Resources:
               Service:
                 - states.amazonaws.com
                 - scheduler.amazonaws.com
+                - monitoring.rds.amazonaws.com
             Action:
               - sts:AssumeRole
       Path: /
+
   StepFunctionsM2SchedulerRolePolicies:
     Type: AWS::IAM::Policy
     Properties:
@@ -203,7 +445,10 @@ Resources:
                 - - arn:aws:m2
                   - Ref: AWS::Region
                   - Ref: AWS::AccountId
-                  - app/*
+                  - Fn::Join:
+                      - '/'
+                      - - app
+                        - !GetAtt M2ApplicationMicroFocus.ApplicationId
           - Effect: Allow
             Action:
               - states:StartExecution
@@ -218,7 +463,19 @@ Resources:
             Action:
               - states:DescribeExecution
               - states:StopExecution
-            Resource: '*'
+            Resource:
+              - Fn::Join:
+                  - ':'
+                  - - arn:aws:states
+                    - Ref: AWS::Region
+                    - Ref: AWS::AccountId
+                    - execution:*
+              - Fn::Join:
+                  - ':'
+                  - - arn:aws:states
+                    - Ref: AWS::Region
+                    - Ref: AWS::AccountId
+                    - express:*
           - Effect: Allow
             Action:
               - events:PutTargets
@@ -237,19 +494,33 @@ Resources:
               - xray:PutTelemetryRecords
               - xray:GetSamplingRules
               - xray:GetSamplingTargets
-              - logs:Describe*
-              - logs:Get*
-              - logs:List*
               - logs:StartQuery
               - logs:StopQuery
               - logs:TestMetricFilter
               - logs:FilterLogEvents
+              - logs:CreateLogDelivery
+              - logs:CreateLogStream
+              - logs:GetLogDelivery
+              - logs:UpdateLogDelivery
+              - logs:DeleteLogDelivery
+              - logs:ListLogDeliveries
+              - logs:PutLogEvents
+              - logs:PutResourcePolicy
+              - logs:DescribeResourcePolicies
+              - logs:DescribeLogGroups
+              - logs:CreateLogGroup
+              - logs:PutRetentionPolicy
+              - logs:DescribeLogStreams
+              - logs:GetLogEvents
             Resource: '*'
       Roles:
         - Ref: StepFunctionsM2SchedulerRole
 
   M2StepFunctionsJobTemplate:
     Type: AWS::StepFunctions::StateMachine
+    DependsOn:
+      - StepFunctionsM2SchedulerRolePolicies
+      - StepFunctionsM2SchedulerRole
     Properties:
       StateMachineName:
         Fn::Join:
@@ -357,9 +628,19 @@ Resources:
             Type: Succeed
           Fail:
             Type: Fail
+      TracingConfiguration:
+        Enabled: true
+      LoggingConfiguration:
+        Level: ALL
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt M2BatchLogGroup.Arn
 
   M2StepFunctionScheduler:
     Type: AWS::StepFunctions::StateMachine
+    DependsOn:
+      - StepFunctionsM2SchedulerRolePolicies
+      - StepFunctionsM2SchedulerRole
     Properties:
       StateMachineName:
         Fn::Join:
@@ -458,6 +739,13 @@ Resources:
                     - ApplicationId
                 JobName: BATCHC00
             End: true
+      TracingConfiguration:
+        Enabled: true
+      LoggingConfiguration:
+        Level: ALL
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt M2BatchLogGroup.Arn
 
   M2EventBridgeJobTrigger:
     Type: AWS::Scheduler::Schedule
@@ -478,43 +766,36 @@ Resources:
             - StepFunctionsM2SchedulerRole
             - Arn
 
-  UniqueSuffix:
-    Type: AWS::SSM::Parameter
-    DeletionPolicy: Delete
-    Properties:
-      Type: 'String'
-      Value: !Select [0, !Split ['-', !Select [2, !Split [/, !Ref AWS::StackId ]]]]
-
-  M2Name:
-    Type: AWS::SSM::Parameter
-    DeletionPolicy: Delete
-    Properties:
-      Type: 'String'
-      Value: !Join
-        - '-'
-        -  - !Ref M2ApplicationName
-           - !GetAtt UniqueSuffix.Value
-
 Outputs:
-  M2ApplicationId:
-    Description: M2 Application Id
-    Value:
-      Fn::GetAtt:
-        - M2ApplicationMicroFocus
-        - ApplicationId
+
+  M2BucketName:
+    Description: 'm2 app bucket'
+    Value: !Ref BucketName
+
+  M2AppKey:
+    Description: 's3 app key for m2 deployment'
+    Value: !Ref AppKey
 
   M2EnvironmentId:
     Description: 'm2 environment id'
-    Value: !GetAtt M2EnvironmentMicroFocus.EnvironmentId
+    Value: !GetAtt M2EnvironmentMicrofocus.EnvironmentId
 
-  StepFunctionsSchedulerFlowName:
-    Description: Step Functions Scheduler Flow Name
-    Value:
-      Fn::GetAtt:
-        - M2StepFunctionScheduler
-        - Name
+  M2ApplicationId:
+    Description: 'm2 application id'
+    Value: !GetAtt M2ApplicationMicroFocus.ApplicationId
 
   M2AppDef:
     Description: 'm2 app def'
     Value: !GetAtt M2AppDef.Value
 
+  M2DbName:
+    Description: 'm2 db name'
+    Value: !GetAtt M2DbName.Value
+
+  M2Subnet1Ips:
+    Description: 'm2 subnet 1 ip addresses'
+    Value: !GetAtt M2Subnet1CidrBlock.Value
+
+  M2Subnet2Ips:
+    Description: 'm2 subnet 2 ip addresses'
+    Value: !GetAtt M2Subnet2CidrBlock.Value

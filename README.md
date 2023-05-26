@@ -6,7 +6,7 @@ The solution demonstrates how Amazon EventBridge and AWS Step Functions can be u
 ## Prerequisites
 * Familiarity with AWS Mainframe Modernization service
 * Knowledge on Mainframe COBOL and JCL programming and operations
-* AWS account with default VPC defined with security group in-bound and out-bound rules to permit access from port 5432. This is needed for communication of AWS Mainframe Modernization Application with the RDS database
+* The security group out-bound rules to permit access to the port if it is changed to different port other than what is provided as default 5432 in CloudFormation template. This is needed for communication of AWS Mainframe Modernization Application with the RDS database
 
 
 ## Architecture Diagram
@@ -59,7 +59,8 @@ Sample stack details.
 
 Following AWS resources are created once the CloudFormation template executes successfully
 
-![Scheduler resources](images/Scheduler%20resources.png)
+![Scheduler resources1](images/Scheduler%20resources1.png)
+![Scheduler resources2](images/Scheduler%20resources2.png)
 
 #### 4. Deploy Application onto Environment:
 - Select AWS Mainframe Modernization service on AWS Console
