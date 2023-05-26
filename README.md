@@ -69,7 +69,7 @@ Following AWS resources are created once the CloudFormation template executes su
 #### 5. Start Application:
 - Once the Application moves to Ready status, click on Action dropdown menu and click Start application
 - Once the Application moves to Running status, the installation is complete
-- Navigate to different services on AWS Console to check on the different resources created - 
+- Navigate to different services on AWS Console to check on the different resources created
 - Amazon EventBridge -
 
 ![Amazon EventBridge](images/EventBridge.png)
