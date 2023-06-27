@@ -66,7 +66,7 @@ Resources:
       PreferredMaintenanceWindow: 'sun:00:00-sun:01:00'
       EngineType: microfocus
       InstanceType: !Ref InstanceType
-      PubliclyAccessible: true
+      PubliclyAccessible: false
       SubnetIds:
         - !Ref M2Subnet1
         - !Ref M2Subnet2
@@ -261,7 +261,7 @@ Resources:
           ToPort: 65335
           Description: 'Allow on-vpc inbound access'
         - IpProtocol: tcp
-          CidrIp: '0.0.0.0/0'
+          CidrIp: !GetAtt M2Vpc.CidrBlock
           FromPort: !Ref Tn3270Port
           ToPort: !Ref Tn3270Port
           Description: 'Allow inbound tn3270 access'
@@ -601,7 +601,7 @@ Resources:
           Wait For logs Failed:
             Type: Wait
             Seconds: 15
-            Next: GetLogEvents Failed
+            Next: GetLogEventsFailed
           GetLogEventsSuccess:
             Type: Task
             Next: Success
@@ -614,9 +614,13 @@ Resources:
               - ErrorEquals:
                   - States.TaskFailed
                 BackoffRate: 5
-                IntervalSeconds: 10
-                MaxAttempts: 2
-          GetLogEvents Failed:
+                IntervalSeconds: 15
+                MaxAttempts: 1
+            Catch:
+              - ErrorEquals:
+                  - States.TaskFailed
+                Next: Success
+          GetLogEventsFailed:
             Type: Task
             Next: Fail
             Parameters:
@@ -624,6 +628,16 @@ Resources:
               LogStreamName.$: States.Format('{}/{}/{}/PS010/SYSOUT',$.ExecutionId,$.JobId,$.JobName)
             Resource: arn:aws:states:::aws-sdk:cloudwatchlogs:getLogEvents
             OutputPath: $.Events[0:].Message
+            Retry:
+              - ErrorEquals:
+                  - States.TaskFailed
+                BackoffRate: 5
+                IntervalSeconds: 15
+                MaxAttempts: 1
+            Catch:
+              - ErrorEquals:
+                  - States.TaskFailed
+                Next: Success
           Success:
             Type: Succeed
           Fail:
