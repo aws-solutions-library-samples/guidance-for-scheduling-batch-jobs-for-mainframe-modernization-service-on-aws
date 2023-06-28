@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: 'This template installs the Baseline security assessment custom lens (SO9238) and deploys M2 Batch Scheduler using Amazon EventBridge and AWS Step Functions'
+Description: 'This template installs the Baseline security assessment custom lens (SO9238) and deploys AWS Mainframe Modernization Batch Scheduler using Amazon EventBridge and AWS Step Functions'
 
 Parameters:
 
